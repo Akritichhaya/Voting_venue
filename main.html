@@ -1,0 +1,1760 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>Matdan Sahayak – Voting AI Assistant</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+        rel="stylesheet" />
+    <style>
+        :root {
+            --sf: #FF6B00;
+            --sf2: #FF8C2A;
+            --sfs: #FFF3E8;
+            --gn: #138808;
+            --gn2: #1AA80A;
+            --gns: #E8F5E9;
+            --nv: #0D1B3E;
+            --nv2: #1A2D5A;
+            --sky: #EEF4FF;
+            --g50: #F9FAFB;
+            --g100: #F3F4F6;
+            --g200: #E5E7EB;
+            --g400: #9CA3AF;
+            --g600: #4B5563;
+            --g800: #1F2937;
+            --tr: .22s cubic-bezier(.4, 0, .2, 1);
+        }
+
+
+        #map:focus,
+        #map div:focus,
+        .gm-style div:focus {
+            outline: none !important;
+            box-shadow: none !important;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0
+        }
+
+        html,
+        body {
+            height: 100%;
+            height: 100dvh;
+            overflow: hidden
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', 'Noto Sans Devanagari', sans-serif;
+            background: var(--nv);
+            display: flex;
+            flex-direction: column
+        }
+
+        /* TOPBAR */
+        .topbar {
+            background: var(--nv);
+            padding: 9px 18px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid rgba(255, 255, 255, .08);
+            flex-shrink: 0;
+            z-index: 200
+        }
+
+        .tb-brand {
+            display: flex;
+            align-items: center;
+            gap: 10px
+        }
+
+        .tb-logo {
+            width: 34px;
+            height: 34px;
+            background: linear-gradient(135deg, var(--sf), var(--gn));
+            border-radius: 9px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 17px
+        }
+
+        .tb-title {
+            color: #fff;
+            font-size: 14px;
+            font-weight: 700;
+            line-height: 1.2
+        }
+
+        .tb-sub {
+            color: rgba(255, 255, 255, .4);
+            font-size: 10px
+        }
+
+        .live {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            background: var(--gns);
+            color: var(--gn);
+            font-size: 11px;
+            font-weight: 700;
+            padding: 3px 10px;
+            border-radius: 20px
+        }
+
+        .live::before {
+            content: '';
+            width: 6px;
+            height: 6px;
+            background: var(--gn);
+            border-radius: 50%;
+            animation: blink 1.4s infinite
+        }
+
+        @keyframes blink {
+
+            0%,
+            100% {
+                opacity: 1;
+                transform: scale(1)
+            }
+
+            50% {
+                opacity: .4;
+                transform: scale(1.4)
+            }
+        }
+
+        /* MOBILE TABS */
+        .m-tabs {
+            background: white;
+            display: none;
+            border-bottom: 1px solid var(--g200);
+            flex-shrink: 0
+        }
+
+        .m-tab {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            background: none;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--g400);
+            border-bottom: 2px solid transparent;
+            transition: var(--tr)
+        }
+
+        .m-tab.active {
+            color: var(--sf);
+            border-bottom-color: var(--sf)
+        }
+
+        @media(max-width:700px) {
+            .m-tabs {
+                display: flex
+            }
+        }
+
+        /* MAIN */
+        .main {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+            min-height: 0;
+            position: relative
+        }
+
+        /* MAP PANEL — hidden by default, opens on location */
+        .map-panel {
+            width: 0;
+            min-width: 0;
+            background: #0f172a;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            flex-shrink: 0;
+            transition: width .55s cubic-bezier(.4, 0, .2, 1);
+            position: relative;
+        }
+
+        .map-panel.open {
+            width: 48%
+        }
+
+        #gmap {
+            flex: 1;
+            width: 100%;
+            display: block;
+            opacity: 0;
+            transition: opacity .5s .35s
+        }
+
+        #gmap.ready {
+            opacity: 1
+        }
+
+
+        /* Map waiting screen */
+        .map-wait {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: rgba(255, 255, 255, .22);
+            gap: 14px;
+            text-align: center;
+            padding: 28px;
+        }
+
+        .map-wait .mw-icon {
+            font-size: 54px;
+            opacity: .3;
+            animation: float 3s ease-in-out infinite
+        }
+
+        @keyframes float {
+
+            0%,
+            100% {
+                transform: translateY(0)
+            }
+
+            50% {
+                transform: translateY(-8px)
+            }
+        }
+
+        .map-wait p {
+            font-size: 13px;
+            line-height: 1.8
+        }
+
+        .map-wait.gone {
+            display: none
+        }
+
+        /* DIRECTIONS CARD */
+        .dir-card {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            z-index: 10;
+            background: white;
+            border-radius: 20px 20px 0 0;
+            box-shadow: 0 -6px 28px rgba(0, 0, 0, .2);
+            transform: translateY(100%);
+            transition: transform .45s cubic-bezier(.4, 0, .2, 1);
+            max-height: 55%;
+            overflow-y: auto;
+        }
+
+        .dir-card.open {
+            transform: translateY(0)
+        }
+
+        .dc-handle {
+            width: 36px;
+            height: 4px;
+            background: var(--g200);
+            border-radius: 2px;
+            margin: 10px auto 12px
+        }
+
+        .dc-head {
+            padding: 0 14px 11px;
+            border-bottom: 1px solid var(--g100);
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between
+        }
+
+        .dc-name {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--nv)
+        }
+
+        .dc-addr {
+            font-size: 11px;
+            color: var(--g400);
+            margin-top: 2px
+        }
+
+        .dc-open {
+            background: var(--gns);
+            color: var(--gn);
+            font-size: 10px;
+            font-weight: 700;
+            padding: 3px 9px;
+            border-radius: 10px;
+            white-space: nowrap
+        }
+
+        /* Transport tabs */
+        .tr-tabs {
+            display: flex;
+            padding: 10px 10px 0;
+            gap: 2px
+        }
+
+        .tr-t {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2px;
+            padding: 7px 2px;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: var(--tr);
+            font-size: 10px;
+            font-weight: 600;
+            color: var(--g400)
+        }
+
+        .tr-t .ti {
+            font-size: 20px
+        }
+
+        .tr-t.on {
+            color: var(--nv);
+            border-bottom-color: var(--sf)
+        }
+
+        .tr-t:hover:not(.on) {
+            color: var(--g600)
+        }
+
+        /* Route result */
+        .ri {
+            padding: 11px 14px
+        }
+
+        .ri-top {
+            display: flex;
+            align-items: baseline;
+            gap: 6px;
+            margin-bottom: 3px
+        }
+
+        .ri-time {
+            font-size: 24px;
+            font-weight: 800;
+            color: var(--nv)
+        }
+
+        .ri-mode {
+            font-size: 12px;
+            color: var(--g400)
+        }
+
+        .ri-dist {
+            font-size: 13px;
+            color: var(--g600);
+            margin-bottom: 8px
+        }
+
+        .ri-steps {
+            background: var(--g50);
+            border-radius: 10px;
+            padding: 10px 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px
+        }
+
+        .rs {
+            display: flex;
+            gap: 10px;
+            font-size: 12px;
+            align-items: flex-start
+        }
+
+        .rs-dot {
+            width: 20px;
+            height: 20px;
+            min-width: 20px;
+            border-radius: 50%;
+            background: var(--sf);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            font-weight: 700;
+            margin-top: 1px
+        }
+
+        .rs-dot.last {
+            background: var(--gn)
+        }
+
+        .app-container {
+            display: flex;
+            /* Keeps windows side-by-side */
+            height: 100vh;
+        }
+
+        #chat-window {
+            flex: 1;
+            /* 50% width */
+            border-right: 2px solid #ddd;
+        }
+
+        #map-container {
+            flex: 1;
+            /* 50% width */
+        }
+
+        .rs-txt {
+            color: var(--g600);
+            line-height: 1.5
+        }
+
+        .nav-btn {
+            margin: 10px 14px 6px;
+            width: calc(100% - 28px);
+            background: linear-gradient(135deg, var(--sf), var(--sf2));
+            color: white;
+            border: none;
+            border-radius: 12px;
+            padding: 11px;
+            font-family: inherit;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            transition: var(--tr);
+        }
+
+        .nav-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 14px rgba(255, 107, 0, .35)
+        }
+
+        /* DIVIDER */
+        .sdiv {
+            width: 0;
+            background: rgba(255, 255, 255, .07);
+            flex-shrink: 0;
+            transition: width .55s
+        }
+
+        .sdiv.open {
+            width: 4px
+        }
+
+        /* CHAT SECTION */
+        .chat-sec {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: var(--g50);
+            min-width: 0;
+            overflow: hidden
+        }
+
+        /* Progress */
+        .prog {
+            background: white;
+            padding: 7px 14px;
+            display: flex;
+            gap: 3px;
+            align-items: center;
+            border-bottom: 1px solid var(--g100);
+            flex-shrink: 0
+        }
+
+        .ps {
+            flex: 1;
+            height: 3px;
+            background: var(--g200);
+            border-radius: 2px;
+            transition: background .4s
+        }
+
+        .ps.done {
+            background: var(--gn)
+        }
+
+        .ps.on {
+            background: var(--sf)
+        }
+
+        .plbl {
+            font-size: 10px;
+            color: var(--g400);
+            font-weight: 600;
+            white-space: nowrap;
+            margin-left: 6px
+        }
+
+        /* Messages */
+        .msgs {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            scroll-behavior: smooth
+        }
+
+        .msgs::-webkit-scrollbar {
+            width: 3px
+        }
+
+        .msgs::-webkit-scrollbar-thumb {
+            background: var(--g200);
+            border-radius: 3px
+        }
+
+        .m-ai {
+            display: flex;
+            gap: 9px;
+            align-items: flex-start;
+            animation: su .28s ease
+        }
+
+        .m-usr {
+            display: flex;
+            justify-content: flex-end;
+            animation: su .28s ease
+        }
+
+        @keyframes su {
+            from {
+                opacity: 0;
+                transform: translateY(6px)
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0)
+            }
+        }
+
+        .av {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            flex-shrink: 0;
+            background: linear-gradient(135deg, var(--sf), var(--gn));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 13px;
+            margin-top: 2px
+        }
+
+        .bbl {
+            background: white;
+            border-radius: 4px 14px 14px 14px;
+            padding: 11px 14px;
+            max-width: 90%;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, .06);
+            font-size: 13.5px;
+            line-height: 1.65;
+            color: var(--g800);
+            border: 1px solid var(--g100)
+        }
+
+        .m-usr .bbl {
+            background: linear-gradient(135deg, var(--nv), var(--nv2));
+            color: white;
+            border-radius: 14px 4px 14px 14px;
+            border: none;
+            max-width: 72%
+        }
+
+        /* Quick replies */
+        .qr {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 7px;
+            margin-top: 10px
+        }
+
+        .qb {
+            background: white;
+            border: 1.5px solid var(--g200);
+            color: var(--nv);
+            font-family: inherit;
+            font-size: 12.5px;
+            font-weight: 600;
+            padding: 7px 14px;
+            border-radius: 18px;
+            cursor: pointer;
+            transition: var(--tr);
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            white-space: nowrap
+        }
+
+        .qb:hover {
+            background: var(--nv);
+            color: white;
+            border-color: var(--nv);
+            transform: translateY(-1px)
+        }
+
+        .qb.p {
+            background: var(--sf);
+            color: white;
+            border-color: var(--sf)
+        }
+
+        .qb.p:hover {
+            background: var(--sf2);
+            border-color: var(--sf2)
+        }
+
+        .qb.g {
+            background: var(--gn);
+            color: white;
+            border-color: var(--gn)
+        }
+
+        /* Step card */
+        .sc {
+            background: var(--sky);
+            border-left: 3px solid var(--sf);
+            border-radius: 0 9px 9px 0;
+            padding: 9px 12px;
+            margin: 5px 0
+        }
+
+        .sc-n {
+            font-size: 10px;
+            font-weight: 700;
+            color: var(--sf);
+            text-transform: uppercase;
+            letter-spacing: .5px
+        }
+
+        .sc-t {
+            font-weight: 700;
+            color: var(--nv);
+            margin: 2px 0 3px;
+            font-size: 13.5px
+        }
+
+        .sc-d {
+            color: var(--g600);
+            font-size: 12.5px
+        }
+
+        /* Candidate card */
+        .cc {
+            background: white;
+            border: 1.5px solid var(--g200);
+            border-radius: 10px;
+            padding: 11px 12px;
+            margin: 5px 0;
+            cursor: pointer;
+            transition: var(--tr)
+        }
+
+        .cc:hover {
+            border-color: var(--sf);
+            box-shadow: 0 4px 14px rgba(255, 107, 0, .1)
+        }
+
+        .cc-name {
+            font-weight: 700;
+            color: var(--nv);
+            font-size: 13.5px
+        }
+
+        .cc-party {
+            display: inline-block;
+            font-size: 11px;
+            font-weight: 600;
+            padding: 2px 8px;
+            border-radius: 14px;
+            margin: 3px 0
+        }
+
+        .cc-meta {
+            font-size: 12px;
+            color: var(--g600)
+        }
+
+        /* EVM */
+        .evm {
+            background: #1e1e1e;
+            border-radius: 14px;
+            padding: 14px;
+            margin: 7px 0;
+            border: 2px solid #3a3a3a
+        }
+
+        .evm-hdr {
+            text-align: center;
+            color: rgba(255, 255, 255, .3);
+            font-size: 9px;
+            font-weight: 700;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            padding-bottom: 9px;
+            border-bottom: 1px solid #333;
+            margin-bottom: 10px
+        }
+
+        .eo {
+            display: flex;
+            align-items: center;
+            gap: 9px;
+            background: #111;
+            border: 1.5px solid #444;
+            border-radius: 8px;
+            padding: 9px 11px;
+            margin: 7px 0;
+            cursor: pointer;
+            transition: var(--tr);
+            color: white
+        }
+
+        .eo:hover {
+            border-color: var(--sf);
+            background: #1a1a1a
+        }
+
+        .eo.sel {
+            border-color: var(--gn);
+            background: rgba(19, 136, 8, .15)
+        }
+
+        .eo-btn {
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 13px;
+            flex-shrink: 0
+        }
+
+        .eo-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 2px;
+            flex-shrink: 0
+        }
+
+        .eo-name {
+            font-size: 12.5px;
+            font-weight: 600;
+            flex: 1
+        }
+
+        .eo-sym {
+            font-size: 19px
+        }
+
+        /* Docs */
+        .dl {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            margin: 7px 0
+        }
+
+        .di {
+            display: flex;
+            align-items: center;
+            gap: 9px;
+            background: var(--gns);
+            border-radius: 8px;
+            padding: 7px 11px;
+            font-size: 13px;
+            color: var(--nv);
+            font-weight: 500
+        }
+
+        /* Trust */
+        .trust {
+            background: linear-gradient(135deg, var(--sfs), var(--gns));
+            border: 1.5px solid var(--g200);
+            border-radius: 10px;
+            padding: 9px 13px;
+            font-size: 12px;
+            color: var(--g600);
+            font-style: italic;
+            text-align: center;
+            margin: 5px 0
+        }
+
+        /* Typing */
+        .typ {
+            display: flex;
+            gap: 9px;
+            align-items: center
+        }
+
+        .tdots {
+            display: flex;
+            gap: 4px;
+            background: white;
+            padding: 11px 14px;
+            border-radius: 4px 14px 14px 14px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, .06)
+        }
+
+        .td {
+            width: 7px;
+            height: 7px;
+            background: var(--g400);
+            border-radius: 50%;
+            animation: bounce .9s infinite
+        }
+
+        .td:nth-child(2) {
+            animation-delay: .15s
+        }
+
+        .td:nth-child(3) {
+            animation-delay: .3s
+        }
+
+        @keyframes bounce {
+
+            0%,
+            80%,
+            100% {
+                transform: translateY(0)
+            }
+
+            40% {
+                transform: translateY(-6px)
+            }
+        }
+
+        /* Confidence */
+        .conf {
+            background: var(--nv);
+            border-radius: 10px;
+            padding: 11px 13px;
+            margin: 7px 0;
+            color: white
+        }
+
+        .conf-lbl {
+            font-size: 11px;
+            color: rgba(255, 255, 255, .45);
+            margin-bottom: 5px
+        }
+
+        .conf-bg {
+            background: rgba(255, 255, 255, .1);
+            border-radius: 4px;
+            height: 8px;
+            overflow: hidden
+        }
+
+        .conf-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--sf), var(--gn));
+            border-radius: 4px;
+            transition: width 1s cubic-bezier(.4, 0, .2, 1)
+        }
+
+        .conf-val {
+            font-size: 20px;
+            font-weight: 800;
+            margin-top: 5px
+        }
+
+        /* Celebration */
+        .celeb {
+            text-align: center;
+            padding: 14px;
+            background: linear-gradient(135deg, var(--sfs), var(--gns));
+            border-radius: 16px;
+            border: 2px dashed var(--sf)
+        }
+
+        .celeb .be {
+            font-size: 44px;
+            margin-bottom: 7px
+        }
+
+        .celeb h3 {
+            color: var(--nv);
+            font-size: 17px;
+            margin-bottom: 3px
+        }
+
+        /* ══ Q&A DRAWER ══ */
+        .qa-wrap {
+            background: white;
+            border-top: 1px solid var(--g200);
+            flex-shrink: 0;
+            overflow: hidden;
+            transition: max-height .35s cubic-bezier(.4, 0, .2, 1);
+            max-height: 44px
+        }
+
+        .qa-wrap.exp {
+            max-height: 260px
+        }
+
+        .qa-toggle {
+            width: 100%;
+            padding: 10px 14px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 12.5px;
+            font-weight: 700;
+            color: var(--nv);
+            display: flex;
+            align-items: center;
+            justify-content: space-between
+        }
+
+        .qa-tl {
+            display: flex;
+            align-items: center;
+            gap: 8px
+        }
+
+        .qa-badge {
+            background: var(--sfs);
+            color: var(--sf);
+            font-size: 10px;
+            font-weight: 700;
+            padding: 2px 8px;
+            border-radius: 10px
+        }
+
+        .qa-chev {
+            font-size: 11px;
+            transition: transform .3s;
+            color: var(--g400)
+        }
+
+        .qa-wrap.exp .qa-chev {
+            transform: rotate(180deg)
+        }
+
+        .qa-chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            padding: 0 14px 10px;
+            overflow-y: auto;
+            max-height: 200px
+        }
+
+        .qac {
+            background: var(--g50);
+            border: 1.5px solid var(--g200);
+            color: var(--g800);
+            font-family: inherit;
+            font-size: 12px;
+            font-weight: 500;
+            padding: 6px 12px;
+            border-radius: 16px;
+            cursor: pointer;
+            transition: var(--tr);
+            text-align: left
+        }
+
+        .qac:hover {
+            border-color: var(--sf);
+            color: var(--sf);
+            background: var(--sfs)
+        }
+
+        /* INPUT */
+        .inp-area {
+            padding: 10px 14px;
+            background: white;
+            border-top: 1px solid var(--g200);
+            display: flex;
+            gap: 9px;
+            align-items: center;
+            flex-shrink: 0
+        }
+
+        .ci {
+            flex: 1;
+            border: 1.5px solid var(--g200);
+            border-radius: 22px;
+            padding: 9px 16px;
+            font-family: inherit;
+            font-size: 13.5px;
+            outline: none;
+            transition: var(--tr);
+            background: var(--g50);
+            color: var(--g800)
+        }
+
+        .ci:focus {
+            border-color: var(--sf);
+            background: white
+        }
+
+        .ci::placeholder {
+            color: var(--g400)
+        }
+
+        .sbtn {
+            width: 38px;
+            height: 38px;
+            background: linear-gradient(135deg, var(--sf), var(--sf2));
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 15px;
+            transition: var(--tr);
+            flex-shrink: 0
+        }
+
+        .sbtn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 4px 12px rgba(255, 107, 0, .4)
+        }
+
+        /* Location input */
+        .loc-w {
+            position: relative;
+            margin: 7px 0
+        }
+
+        .loc-i {
+            width: 100%;
+            border: 1.5px solid var(--g200);
+            border-radius: 9px;
+            padding: 9px 13px 9px 34px;
+            font-family: inherit;
+            font-size: 13.5px;
+            outline: none;
+            transition: var(--tr);
+            background: white
+        }
+
+        .loc-i:focus {
+            border-color: var(--sf)
+        }
+
+        .loc-ic {
+            position: absolute;
+            left: 11px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--sf);
+            font-size: 14px
+        }
+
+        /* MOBILE map panel override */
+        @media(max-width:700px) {
+            .map-panel {
+                display: none
+            }
+
+            .map-panel.open {
+                display: flex;
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                height: 50%;
+                width: 100% !important;
+                z-index: 300;
+            }
+
+            .sdiv {
+                display: none
+            }
+
+            .m-tabs {
+                display: flex
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- TOPBAR -->
+    <div class="topbar">
+        <div class="tb-brand">
+            <div class="tb-logo">🗳️</div>
+            <div>
+                <div class="tb-title">Matdan Sahayak</div>
+                <div class="tb-sub">Voting AI Assistant</div>
+            </div>
+        </div>
+        <div class="live">AI Live</div>
+    </div>
+
+    <!-- MOBILE TABS -->
+    <div class="m-tabs">
+        <button class="m-tab active" id="tabChat" onclick="switchTab('chat')">💬 Assistant</button>
+        <button class="m-tab" id="tabMap" onclick="switchTab('map')" style="opacity:.4;pointer-events:none">🗺️
+            Map</button>
+    </div>
+
+    <!-- MAIN -->
+    <div class="main">
+
+        <!-- MAP PANEL (closed until location selected) -->
+        <div class="map-panel" id="mapPanel">
+            <div id="gmap"></div>
+
+            <!-- Waiting illustration -->
+            <div class="map-wait" id="mapWait">
+                <div class="mw-icon">🗺️</div>
+                <p>Map yahan activate hoga<br />jab aap location share karein</p>
+            </div>
+
+            <!-- Directions card slides up from bottom -->
+            <div class="dir-card" id="dirCard">
+                <div class="dc-handle"></div>
+                <div class="dc-head">
+                    <div>
+                        <div class="dc-name" id="dcName">Polling Booth</div>
+                        <div class="dc-addr" id="dcAddr">Loading…</div>
+                    </div>
+                    <span class="dc-open">⏰ 7AM–6PM</span>
+                </div>
+
+                <!-- Transport mode selector -->
+                <div class="tr-tabs">
+                    <div class="tr-t on" id="trWalk" onclick="setTr('walk')"><span class="ti">🚶</span>Paidal</div>
+                    <div class="tr-t" id="trBike" onclick="setTr('bike')"><span class="ti">🛵</span>Bike</div>
+                    <div class="tr-t" id="trCar" onclick="setTr('car')"><span class="ti">🚗</span>Car</div>
+                    <div class="tr-t" id="trBus" onclick="setTr('bus')"><span class="ti">🚌</span>Transit</div>
+                </div>
+
+                <!-- Route summary -->
+                <div class="ri">
+                    <div class="ri-top">
+                        <div class="ri-time" id="riTime">—</div>
+                        <div class="ri-mode" id="riMode"></div>
+                    </div>
+                    <div class="ri-dist" id="riDist">Calculating route…</div>
+                    <div class="ri-steps" id="riSteps"></div>
+                </div>
+
+                <button class="nav-btn" onclick="openGMaps()">🧭 Google Maps mein Navigate Karein</button>
+            </div>
+        </div>
+
+        <!-- Divider -->
+        <div class="sdiv" id="sdiv"></div>
+
+        <!-- CHAT SECTION -->
+        <div class="chat-sec" id="chatSec">
+
+            <!-- Progress bar -->
+            <div class="prog" id="prog">
+                <div class="ps on" id="ps1"></div>
+                <div class="ps" id="ps2"></div>
+                <div class="ps" id="ps3"></div>
+                <div class="ps" id="ps4"></div>
+                <div class="ps" id="ps5"></div>
+                <div class="ps" id="ps6"></div>
+                <div class="ps" id="ps7"></div>
+                <div class="ps" id="ps8"></div>
+                <div class="ps" id="ps9"></div>
+                <div class="plbl" id="plbl">Welcome</div>
+            </div>
+
+            <!-- Messages -->
+            <div class="msgs" id="msgs"></div>
+
+            <!-- Q&A Drawer -->
+            <div class="qa-wrap" id="qaWrap">
+                <button class="qa-toggle" onclick="toggleQA()">
+                    <div class="qa-tl">
+                        <span>❓</span><span>Koi sawaal? Yahan se puchein</span>
+                        <span class="qa-badge">Q&amp;A</span>
+                    </div>
+                    <span class="qa-chev" id="qaChev">▼</span>
+                </button>
+                <div class="qa-chips" id="qaChips"></div>
+            </div>
+
+            <!-- Input -->
+            <div class="inp-area">
+                <input class="ci" id="ci" placeholder="Apna sawaal likhein…"
+                    onkeydown="if(event.key==='Enter')send()" />
+                <button class="sbtn" onclick="send()">➤</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Google Maps API — replace YOUR_KEY -->
+    <script>
+        (function () {
+            const s = document.createElement('script');
+            s.src = 'https://maps.googleapis.com/maps/api/js?key=MAP_key&libraries=places,geometry&v=weekly';
+            s.async = true; s.defer = true;
+            s.onerror = () => { window._gmFail = true };
+            document.head.appendChild(s);
+        })();
+    </script>
+
+    <script>
+        /* ─── STATE ─── */
+        const ST = {
+            lang: 'hindi', step: 'welcome',
+            userLL: null, boothLL: null,
+            boothName: '', boothAddr: '',
+            transport: 'walk',
+            map: null, uMark: null, bMark: null,
+            dSvc: null, dRend: null,
+            gmOk: false, gmFail: false
+        };
+
+        const STEPS = ['welcome', 'lang', 'first', 'location', 'booth', 'docs', 'candidates', 'trust', 'process', 'practice', 'done'];
+        const SLBL = { welcome: 'Welcome', lang: 'Language', first: 'First Time?', location: 'Location', booth: 'Booth Info', docs: 'Documents', candidates: 'Candidates', trust: 'Neutrality', process: 'Process', practice: 'Practice', done: 'Done 🎉' };
+
+        const CANDS = [
+            { n: 'Ramesh Kumar', p: 'Lok Shakti Dal', c: '#FF6B00', s: '🌸', e: '8 yrs', w: 'Roads & Schools' },
+            { n: 'Priya Sharma', p: 'Jan Kalyan Party', c: '#138808', s: '🌿', e: '4 yrs', w: 'Healthcare & Women' },
+            { n: 'Arjun Singh', p: 'Vikas Morcha', c: '#1565C0', s: '⚙️', e: '12 yrs', w: 'Employment & Infra' }
+        ];
+
+        const QH = ['Voter ID nahi hai to kya vote de sakte hain?', 'EVM machine kya hoti hai?', 'NOTA ka matlab kya hai?', 'Vote secret hota hai kya?', 'Booth par kitna time lagta hai?', 'Voter list mein naam check kaise karein?', 'Pehli baar voter ke liye kya process hai?', 'Booth par koi pareshan kare to kya karein?', 'Voter ID ke alawa kaunsa ID valid hai?', 'Polling booth ki timing kya hoti hai?', 'Agar naam voter list mein nahi hai?', 'Divyaang voters ke liye kya suvidha hai?'];
+        const QE = ['Can I vote without Voter ID?', 'What is an EVM machine?', 'What does NOTA mean?', 'Is my vote really secret?', 'How long does voting take?', 'How to check my name in voter list?', 'What is the process for first-time voters?', 'What to do if someone disturbs me at the booth?', 'Which IDs are valid besides Voter ID?', 'What are polling booth timings?', 'What if my name is not on the voter list?', 'What facilities are available for disabled voters?'];
+
+        /* ─── GOOGLE MAP ─── */
+        function gmReady() {
+            ST.gmOk = true;
+            ST.dSvc = new google.maps.DirectionsService();
+            ST.dRend = new google.maps.DirectionsRenderer({
+                suppressMarkers: false,
+                polylineOptions: { strokeColor: '#FF6B00', strokeWeight: 5, strokeOpacity: .85 }
+            });
+        }
+        window.gmReady = gmReady;
+        window.gm_authFailure = () => { ST.gmFail = true };
+
+        function initMap() {
+            if (!ST.gmOk || ST.map) return;
+            const el = document.getElementById('gmap');
+            // Replace your existing map code with this one:
+            ST.map = new google.maps.Map(document.getElementById('map'), {
+                center: { lat: 20.5937, lng: 78.9629 },
+                zoom: 12,
+                disableDefaultUI: true,
+                styles: [
+                    { "elementType": "geometry", "stylers": [{ "color": "#f5f5f5" }] },
+                    { "featureType": "poi", "stylers": [{ "visibility": "off" }] },
+                    { "featureType": "road", "elementType": "geometry", "stylers": [{ "color": "#ffffff" }] },
+                    { "featureType": "water", "elementType": "geometry", "stylers": [{ "color": "#e9e9e9" }] }
+                ]
+            });
+            ST.dRend.setMap(ST.map);
+            el.classList.add('ready');
+        }
+
+        function openMapPanel() {
+            const mp = document.getElementById('mapPanel');
+            mp.classList.add('open');
+            document.getElementById('sdiv').classList.add('open');
+            document.getElementById('mapWait').classList.add('gone');
+            // enable map tab on mobile
+            const mt = document.getElementById('tabMap');
+            mt.style.opacity = '1'; mt.style.pointerEvents = '';
+            if (window.innerWidth <= 700) mp.style.display = 'flex';
+            setTimeout(initMap, 120);
+        }
+
+        function placeMarkers() {
+            if (!ST.map) return;
+            if (ST.uMark) ST.uMark.setMap(null);
+            ST.uMark = new google.maps.Marker({
+                position: ST.userLL, map: ST.map,
+                title: 'Aapki Location',
+                icon: { path: google.maps.SymbolPath.CIRCLE, scale: 9, fillColor: '#4285F4', fillOpacity: 1, strokeColor: 'white', strokeWeight: 2.5 },
+                zIndex: 10
+            });
+            new google.maps.Circle({ map: ST.map, center: ST.userLL, radius: 60, strokeColor: '#4285F4', strokeOpacity: .25, strokeWeight: 1, fillColor: '#4285F4', fillOpacity: .07 });
+
+            if (ST.bMark) ST.bMark.setMap(null);
+            const svg = 'data:image/svg+xml;base64,' + btoa(`<svg xmlns="http://www.w3.org/2000/svg" width="40" height="46"><path d="M20 0C9 0 0 9 0 20c0 15 20 26 20 26S40 35 40 20C40 9 31 0 20 0z" fill="#FF6B00"/><circle cx="20" cy="20" r="14" fill="white"/><text x="20" y="26" text-anchor="middle" font-size="16">🏫</text></svg>`);
+            ST.bMark = new google.maps.Marker({
+                position: ST.boothLL, map: ST.map,
+                title: ST.boothName,
+                icon: { url: svg, scaledSize: new google.maps.Size(40, 46), anchor: new google.maps.Point(20, 46) },
+                zIndex: 20
+            });
+            const iw = new google.maps.InfoWindow({ content: `<div style="font-family:sans-serif;padding:3px"><strong style="color:#0D1B3E;font-size:13px">${ST.boothName}</strong><br/><span style="font-size:11px;color:#666">${ST.boothAddr}</span><br/><span style="font-size:11px;color:#138808;font-weight:600">⏰ 7AM–6PM</span></div>` });
+            ST.bMark.addListener('click', () => iw.open(ST.map, ST.bMark));
+            iw.open(ST.map, ST.bMark);
+        }
+
+        /* ─── DIRECTIONS ─── */
+        const TMAP = { walk: 'WALKING', bike: 'DRIVING', car: 'DRIVING', bus: 'TRANSIT' };
+        const TSPD = { walk: 5, bike: 20, car: 35, bus: 12 };
+        const TICO = { walk: '🚶 Paidal', bike: '🛵 Bike se', car: '🚗 Car se', bus: '🚌 Transit se' };
+
+        function getDirections() {
+            if (!ST.userLL || !ST.boothLL) return;
+            if (!ST.gmOk || ST.gmFail || !ST.map) { calcFallback(); return; }
+            ST.dSvc.route({
+                origin: ST.userLL, destination: ST.boothLL,
+                travelMode: google.maps.TravelMode[TMAP[ST.transport]],
+                unitSystem: google.maps.UnitSystem.METRIC
+            }, (res, status) => {
+                if (status === 'OK') {
+                    ST.dRend.setDirections(res);
+                    renderRoute(res.routes[0].legs[0]);
+                } else { calcFallback(); }
+            });
+        }
+
+        function renderRoute(leg) {
+            document.getElementById('riTime').textContent = leg.duration.text;
+            document.getElementById('riDist').textContent = '📏 ' + leg.distance.text;
+            document.getElementById('riMode').textContent = TICO[ST.transport];
+            const steps = leg.steps.slice(0, 4);
+            document.getElementById('riSteps').innerHTML = steps.map((s, i) => `
+    <div class="rs">
+      <div class="rs-dot ${i === steps.length - 1 ? 'last' : ''}">${i + 1}</div>
+      <div class="rs-txt">${s.instructions.replace(/<[^>]*>/g, '')} <em style="color:#9CA3AF">(${s.distance.text})</em></div>
+    </div>`).join('');
+            showDirCard();
+        }
+
+        function calcFallback() {
+            const R = 6371, dlat = (ST.boothLL.lat - ST.userLL.lat) * Math.PI / 180, dlng = (ST.boothLL.lng - ST.userLL.lng) * Math.PI / 180;
+            const a = Math.sin(dlat / 2) ** 2 + Math.cos(ST.userLL.lat * Math.PI / 180) * Math.cos(ST.boothLL.lat * Math.PI / 180) * Math.sin(dlng / 2) ** 2;
+            const dist = R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+            const dm = Math.round(dist * 1000);
+            const mins = Math.max(1, Math.round((dist / TSPD[ST.transport]) * 60));
+            document.getElementById('riTime').textContent = mins + ' min';
+            document.getElementById('riDist').textContent = '📏 ' + (dm < 1000 ? dm + 'm' : (dist).toFixed(2) + 'km');
+            document.getElementById('riMode').textContent = TICO[ST.transport];
+            const steps = [
+                { t: 'Aapki location se shuru karein', d: '—' },
+                { t: 'Main road par aayein aur seedha chalein', d: Math.round(dm * .35) + 'm' },
+                { t: ST.boothName + ' ki taraf mudein', d: Math.round(dm * .55) + 'm' },
+                { t: ST.boothName + ' — Pahunch gaye! ✅', d: '0m' }
+            ];
+            document.getElementById('riSteps').innerHTML = steps.map((s, i) => `
+    <div class="rs">
+      <div class="rs-dot ${i === steps.length - 1 ? 'last' : ''}">${i + 1}</div>
+      <div class="rs-txt">${s.t}${s.d !== '—' && s.d !== '0m' ? ` <em style="color:#9CA3AF">(${s.d})</em>` : ''}</div>
+    </div>`).join('');
+            showDirCard();
+        }
+
+        function showDirCard() {
+            document.getElementById('dcName').textContent = ST.boothName;
+            document.getElementById('dcAddr').textContent = ST.boothAddr;
+            document.getElementById('dirCard').classList.add('open');
+        }
+
+        function setTr(mode) {
+            ST.transport = mode;
+            ['walk', 'bike', 'car', 'bus'].forEach(m => {
+                const id = 'tr' + m.charAt(0).toUpperCase() + m.slice(1);
+                document.getElementById(id)?.classList.toggle('on', m === mode);
+            });
+            getDirections();
+        }
+
+        function openGMaps() {
+            if (!ST.userLL || !ST.boothLL) return;
+            const mMap = { walk: 2, bike: 1, car: 0, bus: 3 };
+            window.open(`https://www.google.com/maps/dir/${ST.userLL.lat},${ST.userLL.lng}/${ST.boothLL.lat},${ST.boothLL.lng}/@${ST.boothLL.lat},${ST.boothLL.lng},15z/data=!4m2!4m1!3e${mMap[ST.transport]}`, '_blank');
+        }
+
+        /* ─── MOBILE TABS ─── */
+        function switchTab(t) {
+            document.getElementById('tabChat').classList.toggle('active', t === 'chat');
+            document.getElementById('tabMap').classList.toggle('active', t === 'map');
+            if (window.innerWidth <= 700) {
+                const mp = document.getElementById('mapPanel');
+                const cs = document.getElementById('chatSec');
+                if (t === 'map') {
+                    mp.style.display = mp.classList.contains('open') ? 'flex' : 'none';
+                    cs.style.display = 'none';
+                } else {
+                    if (mp.classList.contains('open')) mp.style.display = 'none';
+                    cs.style.display = 'flex';
+                }
+            }
+        }
+
+        function addMapMessage(lat, lng) {
+            const chat = document.getElementById('messages');
+            const mapBubble = document.createElement('div');
+            mapBubble.className = 'ai-message';
+
+            // This injects a small map directly into the chat thread
+            mapBubble.innerHTML = `
+        <p>Here is your polling booth location:</p>
+        <iframe 
+            width="100%" 
+            height="250" 
+            style="border:0; border-radius: 10px;" 
+            src="https://www.google.com/maps/embed/v1/place?key=YOUR_GOOGLE_MAPS_API_KEY&q=${lat},${lng}">
+        </iframe>
+    `;
+            chat.appendChild(mapBubble);
+        }
+
+
+
+
+
+        /* ─── CHAT ENGINE ─── */
+        const msgsEl = document.getElementById('msgs');
+        function addMsg(html, usr = false) {
+            const d = document.createElement('div');
+            d.className = usr ? 'm-usr' : 'm-ai';
+            d.innerHTML = usr ? `<div class="bbl">${html}</div>` : `<div class="av">🗳️</div><div class="bbl">${html}</div>`;
+            msgsEl.appendChild(d); msgsEl.scrollTop = msgsEl.scrollHeight; return d;
+        }
+        function showTyp() {
+            const d = document.createElement('div'); d.className = 'm-ai typ'; d.id = 'typ';
+            d.innerHTML = `<div class="av">🗳️</div><div class="tdots"><div class="td"></div><div class="td"></div><div class="td"></div></div>`;
+            msgsEl.appendChild(d); msgsEl.scrollTop = msgsEl.scrollHeight;
+        }
+        function rmTyp() { document.getElementById('typ')?.remove() }
+        const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+        async function aiReply(html, ms = 900) { showTyp(); await sleep(ms); rmTyp(); addMsg(html) }
+
+        function setProg(step) {
+            ST.step = step;
+            const idx = STEPS.indexOf(step);
+            STEPS.forEach((_, i) => {
+                const el = document.getElementById('ps' + (i + 1));
+                if (!el) return;
+                el.className = 'ps' + (i < idx ? ' done' : i === idx ? ' on' : '');
+            });
+            document.getElementById('plbl').textContent = SLBL[step] || '';
+        }
+
+        /* ─── Q&A DRAWER ─── */
+        function buildChips() {
+            const arr = ST.lang === 'hindi' ? QH : QE;
+            document.getElementById('qaChips').innerHTML = arr.map(q => `<button class="qac" onclick="askQ(this,'${q.replace(/'/g, "\\'")}')">${q}</button>`).join('');
+        }
+        function toggleQA() { document.getElementById('qaWrap').classList.toggle('exp') }
+        function askQ(_, q) { document.getElementById('qaWrap').classList.remove('exp'); addMsg(q, true); callAI(q) }
+
+        /* ─── FLOW ─── */
+        async function startFlow() {
+            setProg('welcome');
+            await aiReply(`
+    <span style="font-size:18px">🙏</span> <strong>Matdan Sahayak mein swagat hai!</strong><br/>
+    <em style="color:var(--g600)">Welcome to the Voting AI Assistant</em><br/><br/>
+    Step-by-step voting guide, personalized polling booth map, aur live Q&A — sab ek jagah.<br/><br/>
+    <strong>Aap kaise baat karna chahenge?</strong>
+    <div class="qr">
+      <button class="qb p" onclick="setLang('hindi')">🇮🇳 Hindi</button>
+      <button class="qb" onclick="setLang('english')">🇺🇸 English</button>
+    </div>
+  `);
+        }
+
+        async function setLang(lang) {
+            ST.lang = lang; addMsg(lang === 'hindi' ? '🇮🇳 Hindi' : '🇺🇸 English', true);
+            buildChips(); setProg('first');
+            const h = lang === 'hindi';
+            await aiReply(`
+    <strong>${h ? 'Bahut achha! 😊' : 'Great choice! 😊'}</strong><br/>
+    ${h ? 'Kya aap <strong>pehli baar</strong> vote kar rahe hain?' : 'Is this your <strong>first time</strong> voting?'}
+    <div class="qr">
+      <button class="qb p" onclick="setFirst(true)">✅ ${h ? 'Haan, pehli baar' : 'Yes, first time'}</button>
+      <button class="qb" onclick="setFirst(false)">🔄 ${h ? 'Nahi, pehle bhi' : 'No, voted before'}</button>
+    </div>
+  `);
+        }
+
+        async function setFirst(val) {
+            const h = ST.lang === 'hindi';
+            addMsg(val ? (h ? '✅ Haan, pehli baar' : '✅ First time') : (h ? '🔄 Nahi' : '🔄 No'), true);
+            setProg('location');
+            if (val) { await aiReply(`<strong>${h ? 'Tension mat lijiye! 😊' : "Don't worry! 😊"}</strong><br/>${h ? 'Main har step guide karunga. Sab aasaan hai!' : 'I will guide every step. It is easy!'}`, 600); await sleep(300) }
+            await aiReply(`
+    <strong>📍 ${h ? 'Apna location share karein' : 'Share your location'}</strong><br/>
+    ${h ? 'Isse aapka nearest polling booth, candidates, aur directions — sab personalized milega.' : 'This enables your nearest polling booth, candidates & directions — all personalized.'}
+    <div class="qr">
+      <button class="qb p" onclick="useGPS()">📍 ${h ? 'Current Location' : 'Use Current Location'}</button>
+      <button class="qb" onclick="manualLoc()">✍️ ${h ? 'Manually Enter' : 'Enter Manually'}</button>
+    </div>
+  `);
+        }
+
+        async function useGPS() {
+            const h = ST.lang === 'hindi';
+            addMsg('📍 ' + (h ? 'Current location use kar raha hoon' : 'Using current location'), true);
+            if (!navigator.geolocation) { manualLoc(); return }
+            showTyp();
+            navigator.geolocation.getCurrentPosition(
+                p => { rmTyp(); ST.userLL = { lat: p.coords.latitude, lng: p.coords.longitude }; afterLoc(h ? 'Aapki GPS Location' : 'Your GPS Location') },
+                () => { rmTyp(); ST.userLL = { lat: 28.6315, lng: 77.2167 }; afterLoc(h ? 'New Delhi (Default)' : 'New Delhi (Default)') },
+                { timeout: 8000 }
+            );
+        }
+
+        async function manualLoc() {
+            const h = ST.lang === 'hindi';
+            await aiReply(`
+    <strong>${h ? 'Apna shehar ya pin code darj karein:' : 'Enter your city or PIN code:'}</strong>
+    <div class="loc-w"><span class="loc-ic">📍</span><input id="locI" class="loc-i" placeholder="${h ? 'Jaise: Delhi, Mumbai, 400001…' : 'E.g. Delhi, Mumbai, 400001…'}" onkeydown="if(event.key==='Enter')subLoc()"/></div>
+    <div class="qr"><button class="qb p" onclick="subLoc()">✅ Confirm</button></div>
+  `);
+            setTimeout(() => document.getElementById('locI')?.focus(), 300);
+        }
+
+        async function subLoc() {
+            const v = document.getElementById('locI')?.value?.trim();
+            if (!v) return;
+            const h = ST.lang === 'hindi';
+            addMsg('📍 ' + v, true); showTyp();
+            if (ST.gmOk && window.google) {
+                new google.maps.Geocoder().geocode({ address: v + ', India' }, (res, st) => {
+                    rmTyp();
+                    ST.userLL = st === 'OK' && res[0]
+                        ? { lat: res[0].geometry.location.lat(), lng: res[0].geometry.location.lng() }
+                        : { lat: 28.6315, lng: 77.2167 };
+                    afterLoc(st === 'OK' && res[0] ? res[0].formatted_address : v);
+                });
+            } else { rmTyp(); ST.userLL = { lat: 28.6315, lng: 77.2167 }; afterLoc(v) }
+        }
+
+        async function afterLoc(locName) {
+            const h = ST.lang === 'hindi';
+            // Booth ~300–600m away
+            const r = () => (Math.random() * .004 + .002) * (Math.random() > .5 ? 1 : -1);
+            ST.boothLL = { lat: ST.userLL.lat + r(), lng: ST.userLL.lng + r() };
+            ST.boothName = h ? 'Govt. Primary School, Ward 12' : 'Govt. Primary School, Ward 12';
+            ST.boothAddr = h ? 'Near Main Chowk, Sector 4' : 'Near Main Chowk, Sector 4';
+
+            // ★ OPEN MAP NOW
+            openMapPanel();
+            await sleep(300);
+            placeMarkers();
+            await sleep(200);
+            getDirections();
+
+            setProg('booth');
+            const dlat = ST.boothLL.lat - ST.userLL.lat, dlng = ST.boothLL.lng - ST.userLL.lng;
+            const dm = Math.round(Math.sqrt(dlat ** 2 + dlng ** 2) * 111000);
+            const ds = dm < 1000 ? dm + 'm' : (dm / 1000).toFixed(1) + 'km';
+
+            await aiReply(`
+    <strong>✅ ${h ? 'Location मिल गई!' : 'Location found!'}</strong> — 📍 ${locName}<br/><br/>
+    <strong>🏫 ${h ? 'Aapka Nearest Polling Booth:' : 'Your Nearest Polling Booth:'}</strong>
+    <div class="sc">
+      <div class="sc-t">📍 ${ST.boothName}</div>
+      <div class="sc-d">📏 ${h ? 'Doori' : 'Distance'}: <strong>${ds}</strong> &nbsp;|&nbsp; ⏰ 7:00 AM – 6:00 PM</div>
+    </div>
+    🗺️ ${h ? '<strong>Map left side par open ho gaya hai</strong> — transport mode (🚶/🛵/🚗/🚌) choose karein, directions update ho jaayegi!' : '<strong>Map has opened on the left</strong> — choose a transport mode (🚶/🛵/🚗/🚌) and directions will update!'}
+    <div class="qr">
+      <button class="qb p" onclick="showDocs()">📋 ${h ? 'Documents Dekhein' : 'View Documents'}</button>
+    </div>
+  `, 1000);
+        }
+
+        async function showDocs() {
+            const h = ST.lang === 'hindi';
+            setProg('docs'); addMsg(h ? '📋 Documents' : '📋 Documents', true);
+            await aiReply(`
+    <strong>📋 ${h ? 'Zaroori Documents' : 'Required Documents'}</strong><br/>
+    ${h ? '<strong>Koi ek</strong> document saath le jaana zaroori hai:' : 'Carry <strong>any one</strong> of these to vote:'}
+    <div class="dl">
+      <div class="di">🪪 ${h ? 'Voter ID Card (EPIC)' : 'Voter ID Card (EPIC)'}</div>
+      <div class="di">📘 Passport</div>
+      <div class="di">🚗 ${h ? 'Driving License' : 'Driving License'}</div>
+      <div class="di">🏦 Aadhaar Card</div>
+      <div class="di">📱 mAadhaar App</div>
+      <div class="di">🏢 ${h ? 'Govt. Employee ID' : 'Govt. Employee ID'}</div>
+    </div>
+    <div class="qr"><button class="qb p" onclick="showCands()">👥 ${h ? 'Candidates Dekhein' : 'View Candidates'}</button></div>
+  `);
+        }
+
+        async function showCands() {
+            const h = ST.lang === 'hindi'; setProg('candidates'); addMsg('👥 Candidates', true);
+            await aiReply(`
+    <strong>👥 ${h ? 'Aapke area ke Candidates:' : 'Candidates in your area:'}</strong>
+    <em style="font-size:11px;color:var(--g400)">${h ? 'Tap karein adhik jankari ke liye' : 'Tap for more details'}</em>
+    ${CANDS.map((c, i) => `<div class="cc" onclick="candD(${i})"><div style="display:flex;align-items:center;gap:8px"><span style="font-size:22px">${c.s}</span><div><div class="cc-name">${c.n}</div><span class="cc-party" style="background:${c.c}22;color:${c.c}">${c.p}</span></div></div><div class="cc-meta">⭐ ${h ? 'Anubhav' : 'Exp'}: ${c.e} | 🛠️ ${c.w}</div></div>`).join('')}
+    <div class="qr"><button class="qb p" onclick="showTrust()">${h ? 'Samajh gaya ➜' : 'Got it ➜'}</button></div>
+  `);
+        }
+
+        async function candD(i) {
+            const h = ST.lang === 'hindi', c = CANDS[i]; addMsg('👆 ' + c.n, true);
+            await aiReply(`
+    <strong>${c.s} ${c.n}</strong><br/>
+    <span style="background:${c.c}22;color:${c.c};padding:2px 8px;border-radius:12px;font-size:11px;font-weight:700">${c.p}</span>
+    <div style="margin:9px 0;font-size:13px;line-height:1.8;color:var(--g600)">⭐ ${h ? 'Anubhav' : 'Experience'}: <strong>${c.e}</strong><br/>🛠️ ${h ? 'Kaam' : 'Focus'}: <strong>${c.w}</strong></div>
+    <a href="https://en.wikipedia.org/wiki/Indian_general_election" target="_blank" style="color:var(--sf);font-size:13px;font-weight:600;text-decoration:none">📖 ${h ? 'Aur jankari →' : 'More info →'}</a>
+  `);
+        }
+
+        async function showTrust() {
+            const h = ST.lang === 'hindi'; setProg('trust'); addMsg(h ? '➜ Aage' : '➜ Next', true);
+            await aiReply(`
+    <div class="trust">🧠 ${h ? '"Yeh assistant sirf jankari deta hai. Vote ka nirnay <strong>sirf aapka apna</strong> hoga — bilkul private."' : '"This assistant only informs. Your vote is <strong>entirely your own</strong> decision — completely private."'}</div>
+    ✅ ${h ? 'Aapka vote <strong>100% secret</strong> hota hai — EVM par koi naam record nahi hota' : 'Your vote is <strong>100% secret</strong> — no name is recorded on the EVM'}
+    <div class="qr"><button class="qb p" onclick="showProc()">🗳️ ${h ? 'Voting Process Sikhein' : 'Learn Voting Process'}</button></div>
+  `);
+        }
+
+        async function showProc() {
+            const h = ST.lang === 'hindi'; setProg('process'); addMsg(h ? '🗳️ Process sikhna chahta hoon' : '🗳️ Teach me the process', true);
+            const st = h ? [
+                ['Step 1', 'Booth mein Entry', 'Queue mein lagte hain, officer andar bulata hai'],
+                ['Step 2', 'ID Verification', 'Aapka Voter ID ya valid ID check hota hai'],
+                ['Step 3', 'Ink Lagana', 'Left index finger par indelible ink lagayi jaati hai ✋'],
+                ['Step 4', 'EVM Machine', 'Voting compartment mein le jaaya jaata hai'],
+                ['Step 5', 'Button Press', 'Pasand ke candidate ke samne BLUE button dabaaein 🔵 — beep aayegi'],
+                ['Step 6', 'Exit', 'Beep ke baad safely bahar aa jaayein ✅']
+            ] : [
+                ['Step 1', 'Enter Booth', 'Queue up; officer calls you in'],
+                ['Step 2', 'ID Check', 'Your Voter ID or valid ID is verified'],
+                ['Step 3', 'Ink Mark', 'Indelible ink on your left index finger ✋'],
+                ['Step 4', 'EVM', 'You enter the voting compartment'],
+                ['Step 5', 'Press Button', 'Press BLUE button beside your candidate 🔵 — a beep confirms'],
+                ['Step 6', 'Exit', 'Exit safely after the beep ✅']
+            ];
+            let html = `<strong>🗳️ ${h ? 'Voting Process:' : 'Voting Process:'}</strong>`;
+            st.forEach(([n, t, d]) => html += `<div class="sc"><div class="sc-n">${n}</div><div class="sc-t">${t}</div><div class="sc-d">${d}</div></div>`);
+            html += `<div class="qr"><button class="qb p" onclick="startPrac()">🎮 ${h ? 'EVM Practice Karein' : 'Try EVM Practice'}</button></div>`;
+            await aiReply(html, 1200);
+        }
+
+        async function startPrac() {
+            const h = ST.lang === 'hindi'; setProg('practice'); addMsg('🎮 Practice Mode', true);
+            await aiReply(`
+    <strong>🎮 EVM Practice Mode</strong><br/>
+    <span style="background:#FEF3C7;color:#92400E;padding:3px 9px;border-radius:7px;font-size:11px;font-weight:700">⚠️ ${h ? 'Sirf Practice — Real Vote Nahi' : 'Practice Only — Not a Real Vote'}</span><br/><br/>
+    ${h ? 'Candidate select karein:' : 'Select your candidate:'}
+    <div class="evm">
+      <div class="evm-hdr">ELECTRONIC VOTING MACHINE — PRACTICE</div>
+      ${CANDS.map((c, i) => `<div class="eo" id="eo${i}" onclick="pickEVM(${i})"><div class="eo-btn" style="background:${c.c}">${i + 1}</div><div class="eo-dot" style="background:${c.c}"></div><div class="eo-name">${c.n}<br/><small style="opacity:.55;font-size:11px">${c.p}</small></div><div class="eo-sym">${c.s}</div></div>`).join('')}
+      <div class="eo" id="eoN" onclick="pickEVM('nota')"><div class="eo-btn" style="background:#666">N</div><div class="eo-dot" style="background:#888"></div><div class="eo-name">NOTA<br/><small style="opacity:.55;font-size:11px">None of the Above</small></div><div class="eo-sym">❌</div></div>
+    </div>
+  `);
+        }
+
+        async function pickEVM(i) {
+            const h = ST.lang === 'hindi';
+            document.querySelectorAll('.eo').forEach(e => e.classList.remove('sel'));
+            document.getElementById(i === 'nota' ? 'eoN' : 'eo' + i)?.classList.add('sel');
+            const name = i === 'nota' ? 'NOTA' : CANDS[i].n;
+            addMsg('🔘 ' + name, true);
+            await aiReply(`
+    <strong>${h ? 'Aapne chunha:' : 'You selected:'} <span style="color:var(--sf)">${name}</span></strong><br/>
+    ${h ? 'Ab BLUE button dabaaein — beep aayegi ✅' : 'Now press the BLUE button — a beep will confirm ✅'}
+    <div class="qr"><button class="qb p" onclick="confVote('${name}')">🔵 ${h ? 'Button Dabao (Confirm)' : 'Press Button (Confirm)'}</button></div>
+  `);
+        }
+
+        async function confVote(name) {
+            const h = ST.lang === 'hindi'; addMsg('🔵 ' + (h ? 'Button daba diya! Beep! 🔊' : 'Button pressed! Beep! 🔊'), true);
+            setProg('done');
+            await aiReply(`<div class="celeb"><div class="be">🎉</div><h3>${h ? 'Beep! Vote Ho Gaya!' : 'Beep! Vote Cast!'}</h3><p style="color:var(--sf);font-weight:700">${h ? '(Sirf Practice tha)' : '(Practice only)'}</p><p>${h ? 'Real booth par bilkul isi tarah karein!' : 'Do exactly this at the real booth!'}</p></div>`, 700);
+            await sleep(600);
+            await aiReply(`
+    <strong>🧘 ${h ? 'Aap Bilkul Ready Hain!' : 'You Are Fully Ready!'}</strong><br/><br/>
+    ${h ? '✅ Vote 100% secret hoga<br/>✅ EVM tamper-proof hai<br/>✅ Koi nahi dekh sakta' : '✅ Vote is 100% secret<br/>✅ EVM is tamper-proof<br/>✅ No one can see your vote'}
+    <div class="conf"><div class="conf-lbl">${h ? 'Aapki Voting Readiness' : 'Your Voting Readiness'}</div><div class="conf-bg"><div class="conf-fill" id="cfill" style="width:0%"></div></div><div class="conf-val" id="cval">0%</div></div>
+    <div class="trust">🙏 ${h ? '"Har vote important hai — apna vote zaroor daalein!"' : '"Every vote matters — please do vote!"'}</div>
+    <div class="qr">
+      <button class="qb p" onclick="finalMsg()">🎊 ${h ? 'Dhanyawad!' : 'Thank You!'}</button>
+      <button class="qb" onclick="startPrac()">🔄 ${h ? 'Dobara Practice' : 'Again'}</button>
+    </div>
+  `);
+            setTimeout(() => {
+                let v = 0; const fi = document.getElementById('cfill'), va = document.getElementById('cval');
+                const iv = setInterval(() => { v = Math.min(v + 2, 98); fi && (fi.style.width = v + '%'); va && (va.textContent = v + '%'); if (v >= 98) clearInterval(iv) }, 18);
+            }, 400);
+        }
+
+        async function finalMsg() {
+            const h = ST.lang === 'hindi'; addMsg('🎊 ' + (h ? 'Dhanyawad!' : 'Thank You!'), true);
+            await aiReply(`
+    <div style="text-align:center;padding:12px 0">
+      <div style="font-size:48px;margin-bottom:10px">🇮🇳</div>
+      <strong style="font-size:16px;color:var(--nv)">${h ? 'Dhanyawad! Jai Hind!' : 'Thank You! Jai Hind!'}</strong><br/>
+      <p style="color:var(--g600);margin-top:7px;font-size:13px;line-height:1.8">${h ? 'Aapka din mangalmay ho ☀️<br/><strong>Vote zaroor daalein — har vote desh banata hai!</strong>' : 'Have a wonderful day ☀️<br/><strong>Please do vote — every vote builds the nation!</strong>'}</p>
+    </div>
+    <div class="qr"><button class="qb" onclick="location.reload()">🔄 ${h ? 'Naya Session' : 'Start Over'}</button></div>
+  `);
+        }
+
+        /* ─── FREE-TEXT AI Q&A ─── */
+        async function send() {
+            const inp = document.getElementById('ci'), txt = inp.value.trim();
+            if (!txt) return; inp.value = ''; addMsg(txt, true); await callAI(txt);
+        }
+
+
+        // added prt
+
+
+
+
+
+        async function callAI(text) {
+            const h = ST.lang === 'hindi'; showTyp();
+            const systemPrompt = `You are Matdan Sahayak, a warm helpful Indian voting AI assistant.
+Language: ${h ? 'Hindi/Hinglish (friendly mix)' : 'English'}.
+Current flow step: ${ST.step}.
+Topics: Indian elections, EVM, polling booths, voter rights, required IDs, Election Commission.
+Rules: max 120 words, use 1-2 emojis, politically neutral, HTML format (<br/> newlines, <strong> for key terms), redirect off-topic questions back to voting.`;
+
+            try {
+                const res = await fetch('/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        message: text,
+                        system_prompt: systemPrompt
+                    })
+                });
+                const d = await res.json();
+                rmTyp();
+                addMsg(d.response || (h ? 'Maafi, dobara try karein.' : 'Sorry, try again.'));
+            } catch (e) {
+                rmTyp();
+                addMsg(h ? '⚠️ Connection check karein.' : '⚠️ Check your connection.');
+            }
+        }
+
+        /* ─── INIT ─── */
+        window.addEventListener('load', () => { buildChips(); setTimeout(startFlow, 400) });
+    </script>
+    <script src="https://maps.googleapis.com/maps/api/js?key=MAP_key&callback=gmReady" async defer></script>
+</body>
+
+</html>
