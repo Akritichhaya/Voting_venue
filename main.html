@@ -2,9 +2,37 @@
 <html lang="en">
 
 <head>
+    <!-- Accessibility: Set document language and role -->
     <meta charset="UTF-8" />
+        <meta name="description" content="Matdan Sahayak – Voting AI Assistant helps users with voting venue and information." />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>Matdan Sahayak – Voting AI Assistant</title>
+            <!-- Google Services Integration (Analytics & Firebase Placeholder) -->
+            <script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
+            <script>
+                window.dataLayer = window.dataLayer || [];
+                function gtag(){dataLayer.push(arguments);}
+                gtag('js', new Date());
+                gtag('config', 'G-XXXXXXXXXX');
+            </script>
+            <!-- Firebase App (the core Firebase SDK) is always required and must be listed first -->
+            <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-app-compat.js"></script>
+            <!-- Add Firebase products that you want to use -->
+            <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-auth-compat.js"></script>
+            <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-firestore-compat.js"></script>
+            <script>
+                // Your web app's Firebase configuration
+                const firebaseConfig = {
+                    apiKey: "YOUR_FIREBASE_API_KEY",
+                    authDomain: "your-app.firebaseapp.com",
+                    projectId: "your-app",
+                    storageBucket: "your-app.appspot.com",
+                    messagingSenderId: "123456789",
+                    appId: "1:123456789:web:abcdef"
+                };
+                // Initialize Firebase
+                firebase.initializeApp(firebaseConfig);
+            </script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -1102,17 +1130,18 @@
 
 <body>
 
-    <!-- TOPBAR -->
-    <div class="topbar">
-        <div class="tb-brand">
-            <div class="tb-logo">🗳️</div>
-            <div>
-                <div class="tb-title">Matdan Sahayak</div>
-                <div class="tb-sub">Voting AI Assistant</div>
+    <header role="banner" aria-label="Top Navigation Bar">
+        <div class="topbar" role="navigation" aria-label="Main Navigation">
+            <div class="tb-brand" aria-label="Brand Logo and Title">
+                <div class="tb-logo" aria-label="App Logo" tabindex="0">🗳️</div>
+                <div>
+                    <div class="tb-title" aria-label="App Title" tabindex="0">Matdan Sahayak</div>
+                    <div class="tb-sub" aria-label="App Subtitle" tabindex="0">Voting AI Assistant</div>
+                </div>
             </div>
+            <div class="live" aria-label="Live Status" tabindex="0">AI Live</div>
         </div>
-        <div class="live">AI Live</div>
-    </div>
+    </header>
 
     <!-- MOBILE TABS -->
     <div class="m-tabs">
@@ -1122,20 +1151,21 @@
     </div>
 
     <!-- MAIN -->
-    <div class="main">
+    <main class="main" role="main" aria-label="Main Content">
+
 
         <!-- MAP PANEL (closed until location selected) -->
-        <div class="map-panel" id="mapPanel">
-            <div id="gmap"></div>
+        <aside class="map-panel" id="mapPanel" aria-label="Map Panel" tabindex="0">
+            <div id="gmap" aria-label="Google Map" tabindex="0"></div>
 
             <!-- Waiting illustration -->
-            <div class="map-wait" id="mapWait">
-                <div class="mw-icon">🗺️</div>
+            <div class="map-wait" id="mapWait" aria-live="polite" aria-atomic="true">
+                <div class="mw-icon" aria-label="Map Icon" role="img">🗺️</div>
                 <p>Map yahan activate hoga<br />jab aap location share karein</p>
             </div>
 
             <!-- Directions card slides up from bottom -->
-            <div class="dir-card" id="dirCard">
+            <section class="dir-card" id="dirCard" aria-label="Directions Card">
                 <div class="dc-handle"></div>
                 <div class="dc-head">
                     <div>
@@ -1164,8 +1194,8 @@
                 </div>
 
                 <button class="nav-btn" onclick="openGMaps()">🧭 Google Maps mein Navigate Karein</button>
-            </div>
-        </div>
+            </section>
+        </aside>
 
         <!-- Divider -->
         <div class="sdiv" id="sdiv"></div>
@@ -1188,11 +1218,11 @@
             </div>
 
             <!-- Messages -->
-            <div class="msgs" id="msgs"></div>
+            <div class="msgs" id="msgs" aria-live="polite" aria-atomic="true"></div>
 
             <!-- Q&A Drawer -->
             <div class="qa-wrap" id="qaWrap">
-                <button class="qa-toggle" onclick="toggleQA()">
+                <button class="qa-toggle" onclick="toggleQA()" aria-expanded="false">
                     <div class="qa-tl">
                         <span>❓</span><span>Koi sawaal? Yahan se puchein</span>
                         <span class="qa-badge">Q&amp;A</span>
@@ -1203,13 +1233,13 @@
             </div>
 
             <!-- Input -->
-            <div class="inp-area">
-                <input class="ci" id="ci" placeholder="Apna sawaal likhein…"
-                    onkeydown="if(event.key==='Enter')send()" />
-                <button class="sbtn" onclick="send()">➤</button>
-            </div>
+            <form class="inp-area" aria-label="Input Area" role="form" onsubmit="send(); return false;">
+                <label for="ci" class="visually-hidden">Type your question</label>
+                <input class="ci" id="ci" placeholder="Apna sawaal likhein…" aria-label="Type your question" onkeydown="if(event.key==='Enter')send()" />
+                <button class="sbtn" type="submit" aria-label="Send">➤</button>
+            </form>
         </div>
-    </div>
+    </main>
 
     <!-- Google Maps API — replace YOUR_KEY -->
     <script>
@@ -1755,6 +1785,9 @@ Rules: max 120 words, use 1-2 emojis, politically neutral, HTML format (<br/> ne
         window.addEventListener('load', () => { buildChips(); setTimeout(startFlow, 400) });
     </script>
     <script src="https://maps.googleapis.com/maps/api/js?key=MAP_key&callback=gmReady" async defer></script>
+    <footer role="contentinfo" aria-label="Footer">
+        <p style="color: #fff; text-align: center; font-size: 12px;">&copy; 2026 Matdan Sahayak. All rights reserved.</p>
+    </footer>
 </body>
 
 </html>

@@ -3,13 +3,15 @@ from fastapi import FastAPI, HTTPException
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
 import google.generativeai as genai
-from dotenv import load_dotenv
+from fastapi.middleware.cors import CORSMiddleware
+from starlette.middleware.base import BaseHTTPMiddleware
+# from dotenv import load_dotenv
 
-# 1. Load environment variables
-load_dotenv()
+# # 1. Load environment variables
+# load_dotenv()
 
 # 2. Configure Gemini (Cleaned up)
-api_key = os.getenv("GEMINI_API_KEY")
+api_key = os.environ.get("GEMINI_API_KEY")
 if not api_key:
     print("CRITICAL: GEMINI_API_KEY is missing from your .env file!")
 else:
@@ -17,18 +19,40 @@ else:
 
 app = FastAPI()
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+class SecurityHeadersMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request, call_next):
+        response = await call_next(request)
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-Frame-Options"] = "DENY"
+        response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+        return response
+
+app.add_middleware(SecurityHeadersMiddleware)
+
+# Efficiency: Load HTML once
+try:
+    with open("main.html", "r", encoding="utf-8") as f:
+        HTML_CONTENT = f.read()
+except FileNotFoundError:
+    HTML_CONTENT = "<html><body><h1>main.html not found</h1></body></html>"
+
 class ChatRequest(BaseModel):
     message: str
     system_prompt: str = ""
 
 @app.get("/", response_class=HTMLResponse)
 async def get_index():
-    with open("main.html", "r", encoding="utf-8") as f:
-        content = f.read()
-    
     # Securely inject the Maps key
     maps_key = os.getenv("GOOGLE_MAPS_API_KEY", "YOUR_KEY_MISSING")
-    return content.replace("YOUR_GOOGLE_MAPS_API_KEY", maps_key)
+    return HTML_CONTENT.replace("MAP_key", maps_key)
 
 @app.post("/chat")
 async def chat(request: ChatRequest):
