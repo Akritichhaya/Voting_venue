@@ -1,4 +1,5 @@
 import os
+from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
@@ -17,12 +18,24 @@ if not api_key:
 else:
     genai.configure(api_key=api_key)
 
-app = FastAPI()
+HTML_CONTENT = "<html><body><h1>main.html not found</h1></body></html>"
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    global HTML_CONTENT
+    try:
+        with open("main.html", "r", encoding="utf-8") as f:
+            HTML_CONTENT = f.read()
+    except FileNotFoundError:
+        HTML_CONTENT = "<html><body><h1>main.html not found</h1></body></html>"
+    yield
+
+app = FastAPI(lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_credentials=True,
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -33,16 +46,11 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         response.headers["X-Content-Type-Options"] = "nosniff"
         response.headers["X-Frame-Options"] = "DENY"
         response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+        response.headers["X-XSS-Protection"] = "1; mode=block"
+        response.headers["Content-Security-Policy"] = "default-src 'self' 'unsafe-inline' 'unsafe-eval' https://fonts.googleapis.com https://fonts.gstatic.com https://maps.googleapis.com; frame-src 'self' https://www.google.com;"
         return response
 
 app.add_middleware(SecurityHeadersMiddleware)
-
-# Efficiency: Load HTML once
-try:
-    with open("main.html", "r", encoding="utf-8") as f:
-        HTML_CONTENT = f.read()
-except FileNotFoundError:
-    HTML_CONTENT = "<html><body><h1>main.html not found</h1></body></html>"
 
 class ChatRequest(BaseModel):
     message: str

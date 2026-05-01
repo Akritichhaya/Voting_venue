@@ -5,34 +5,9 @@
     <!-- Accessibility: Set document language and role -->
     <meta charset="UTF-8" />
         <meta name="description" content="Matdan Sahayak – Voting AI Assistant helps users with voting venue and information." />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Matdan Sahayak – Voting AI Assistant</title>
-            <!-- Google Services Integration (Analytics & Firebase Placeholder) -->
-            <script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
-            <script>
-                window.dataLayer = window.dataLayer || [];
-                function gtag(){dataLayer.push(arguments);}
-                gtag('js', new Date());
-                gtag('config', 'G-XXXXXXXXXX');
-            </script>
-            <!-- Firebase App (the core Firebase SDK) is always required and must be listed first -->
-            <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-app-compat.js"></script>
-            <!-- Add Firebase products that you want to use -->
-            <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-auth-compat.js"></script>
-            <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-firestore-compat.js"></script>
-            <script>
-                // Your web app's Firebase configuration
-                const firebaseConfig = {
-                    apiKey: "YOUR_FIREBASE_API_KEY",
-                    authDomain: "your-app.firebaseapp.com",
-                    projectId: "your-app",
-                    storageBucket: "your-app.appspot.com",
-                    messagingSenderId: "123456789",
-                    appId: "1:123456789:web:abcdef"
-                };
-                // Initialize Firebase
-                firebase.initializeApp(firebaseConfig);
-            </script>
+
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -1446,10 +1421,11 @@
             mapBubble.innerHTML = `
         <p>Here is your polling booth location:</p>
         <iframe 
+            title="Polling Booth Location Map"
             width="100%" 
             height="250" 
             style="border:0; border-radius: 10px;" 
-            src="https://www.google.com/maps/embed/v1/place?key=YOUR_GOOGLE_MAPS_API_KEY&q=${lat},${lng}">
+            src="https://www.google.com/maps/embed/v1/place?key=MAP_key&q=${lat},${lng}">
         </iframe>
     `;
             chat.appendChild(mapBubble);
